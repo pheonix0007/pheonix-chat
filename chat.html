@@ -1,0 +1,285 @@
+<html>
+
+<head>
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+   <style>
+      * {
+         /* font-family: "Helvetica Neue", Helvetica; */
+         margin: 0;
+         padding: 0;
+         color: #303030;
+         font-style: italic;
+         font-family: monospace;
+         font-weight: 700;
+      }
+
+      .header-area {
+         background: #ededed;
+         box-shadow: 0 0.25rem 0.25rem rgb(0 0 0 / 20%), 0 0 1rem rgb(0 0 0 / 20%);
+         color: #80789e;
+         padding: 4px;
+         text-align: center;
+      }
+
+      .message-area {
+         height: 80%;
+         padding: 3px;
+         overflow: auto;
+      }
+
+      .typing-area {
+         margin-top: 8px;
+         
+         height: 8%;
+      }
+
+      .typing-box {
+         width: 70%;
+         height: 80%;
+         resize: none;
+         padding: 28px;
+         border-radius: 21px;
+      }
+
+      .typing-box:focus {
+         outline: none;
+         box-shadow: 0px 0px 2px #0066ff;
+      }
+
+      .send-button {
+         padding: 10px;
+         position: absolute;
+         margin: 6px;
+         border-radius: 15px;
+         flex: 0 0 auto;
+         color: #51585c;
+         opacity: .9;
+      }
+      .gif-button {
+         padding: 10px;
+         margin-top: 6px;
+         border-radius: 15px;
+         flex: 0 0 auto;
+         color: #51585c;
+         opacity: .9;
+      }
+
+      .message-box {
+         margin-top: 10px;
+      }
+
+      .others-message-box {}
+
+      .my-message-box {
+         /* text-align: right;  */
+         background: white;
+      }
+
+      .my-message {
+         float: right;
+         background: #54d9e7;
+    /* text-decoration-color: white; */
+    color: white;
+    /*font-family: cursive;*/
+      }
+
+      .my-gif-message {
+    float: right;
+    background: rgb(183,93,214);
+    /* text-decoration-color: white; */
+    color: white;
+}
+
+      .message {
+         border-radius: 25px;
+         max-width: 70%;
+         padding: 10px 10px 10px 15px;
+         box-shadow: 0 0.25rem 0.25rem rgb(0 0 0 / 20%), 0 0 1rem rgb(0 0 0 / 20%);
+      }
+
+      .others-message {
+         float: left;
+         background: white;
+         color: #FF69B4;
+         /*font-family: cursive;*/
+      }
+
+      .separator {
+         width: 100%;
+         height: 8px;
+         float: left;
+      }
+
+      #gif-separator {
+         width: 100%;
+         height: 8px;
+         float: left;
+      }
+   </style>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"
+      integrity="sha512-v8ng/uGxkge3d1IJuEo6dJP8JViyvms0cly9pnbfRxT6/31c3dRWxIiwGnMSWwZjHKOuY3EVmijs7k1jz/9bLA=="
+      crossorigin="anonymous"></script>
+   <script type="text/javascript" src='http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js'></script>
+
+   <script>
+      var firstTime = true;
+      window.onload = function () {
+
+         //socket = io.connect('https://pheonix-chat.herokuapp.com');
+         var connectionOptions = {
+            "force new connection": true,
+            "reconnectionAttempts": "Infinity",
+            "timeout": 10000,
+            "transports": ["websocket"]
+         };
+         socket = io.connect('https://pheonix-chat.herokuapp.com', connectionOptions);
+         //socket = io.connect('http://localhost:3000',connectionOptions);
+
+         socket.on('message-from-others', function (message) {
+            window.navigator.vibrate([300, 100, 200, 50, 300]);
+            const messages = document.getElementById("message-area");
+            const messageStr = message + '';
+            if (messageStr.includes('.gif')) {
+               var gifHtml =
+                  '<div id="gifid" class="others-message"> ' + '<img src="' + messageStr + '" style="width:220px;height:220px;"/>' + ' </div>' +
+                  '<div id="gif-separator"></div>';
+                  $("#message-area").append(gifHtml);
+               //messages.innerHTML += gifHtml;
+               //   // Handler for .load() called.
+               setTimeout(function () {
+                  $("#gifid").remove();
+                  $("#gif-separator").remove();
+               }, 30000);
+            }
+            else if (messageStr.includes('.webm') || messageStr.includes('.mp4') ) {
+               var gifHtml =
+                  '<div id="webmid" class="others-message"> <video id="webMLoading" loop autoplay onloadedmetadata="this.muted = true" style="width:220px;height:124px;"><source src="' + messageStr + '" type="video/webm;codecs=&quot;vp8, vorbis&quot;"> </video>' + ' </div>' +
+                  '<div id="gif-separator"></div>';
+                  $("#message-area").append(gifHtml);
+               //messages.innerHTML += gifHtml;
+               // Handler for .load() called.
+               setTimeout(function () {
+                  $("#webmid").remove();
+                  $("#gif-separator").remove();
+               }, 40000);
+            }
+
+            else {
+               var msg =
+                  '<div class="message others-message"> ' + message + ' </div>' +
+                  '<div class="separator"></div>';
+                  $("#message-area").append(msg);
+               //messages.innerHTML += msg;
+            }
+            //document.getElementById("message-area").innerHTML += html;
+            messages.scrollTop = messages.scrollHeight;
+
+         })
+      }
+
+      function sendGif(url) {
+         var message = document.getElementById("typing-box");
+         message.value = url;
+         sendMessage();
+      }
+
+
+      function sendMessage() {
+         var message = document.getElementById("typing-box").value;
+         if (message.length != 0) {
+
+            const messageStr = message + '';
+            const messages = document.getElementById("message-area");
+            var time = new Date();
+            console.log(time.getHours() + ":" + time.getMinutes() + ":" + time.getSeconds());
+            if (messageStr.includes('.gif') || messageStr.includes('.webm') || messageStr.includes('.mp4')) {
+
+               var gifMsg='Gif Sent';
+               var msg =
+                  '<div class="message my-gif-message"> ' + gifMsg + ' </div>' +
+                  '<div class="separator"></div>';
+                  $("#message-area").append(msg);
+               //messages.innerHTML += msg;
+            }
+            else{
+               var msg =
+                  '<div class="message my-message"> ' + message + ' </div>' +
+                  '<div class="separator"></div>';
+                  $("#message-area").append(msg);
+            }
+            messages.scrollTop = messages.scrollHeight;
+            //document.getElementById("message-area").innerHTML += html;
+
+            document.getElementById("typing-box").value = "";
+            //var x = document.getElementById("typing-box");
+            //x.autofocus=true;
+            //console.log('autofocus: '+x.autofocus);
+
+            socket.emit("pheonix-message", message);
+         }
+      }
+
+      function searchGif() {
+         var iframe = document.getElementById('frame1');
+         if (iframe != null) {
+            iframe.remove();
+         }
+         else {
+            gifCall();
+         }
+      }
+
+
+      function gifCall() {
+         $('<iframe />');  // Create an iframe element
+         $('<iframe />', {
+            name: 'frame1',
+            id: 'frame1',
+            src: '/giphyCall'
+         }).css({
+            border: "1px solid #ccc",
+            height: "80%",
+            position: "fixed",
+            top: "7px",
+            zIndex: "1000000000",
+            width: "70%",
+            left: "50%",
+            transform: "translateX(-50%)"
+         }).appendTo('body')
+      };
+   </script>
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+</head>
+
+<body>
+   <div class="header-area">
+      <h1> pheonix Chat </h1>
+   </div>
+   <div class="message-area" id="message-area">
+   </div>
+   <div class="typing-area">
+      <button class="gif-button" onclick="searchGif()">
+         <span>
+            <svg viewBox="0 0 24 24" width="24" height="24" class="">
+               <path fill="rgb(183,93,214)" d="M20 0a6 6 0 016 6v14a6 6 0 01-6 6H6a6 6 0 01-6-6V6a6 6 0 016-6h14zM7.928 9C5.196 9 3.95 10.933 3.95 12.815S5.04 16.6 7.918 16.6c1.402 0 2.67-.494 3.127-1.409v-3.198H7.492v1.594h1.839v.925c-.416.299-1.018.37-1.403.37-1.464 0-1.952-1.141-1.952-2.067 0-1.409.768-2.108 1.952-2.108.489 0 1.133.134 1.662.628l1.195-1.173C9.829 9.206 8.936 9 7.928 9zm6.673.206h-2.047v7.199h2.047v-7.2zm7.399 0h-5.578v7.199h2.036v-2.479h3.324V12.26h-3.324v-1.347H22V9.206z" fill="#FFF" fill-rule="evenodd"></path>
+            </svg>
+         </span>
+      </button>
+      <input onblur="this.focus()" autofocus type="text" 
+         onKeyDown="if(event.keyCode==13) sendMessage();" class="typing-box" id="typing-box" />
+      <button class="send-button" onclick="sendMessage()">
+         <span>
+            <svg viewBox="0 0 24 24" width="24" height="24" class="">
+               <path fill="currentColor"
+                  d="M1.101 21.757L23.8 12.028 1.101 2.3l.011 7.912 13.623 1.816-13.623 1.817-.011 7.912z"></path>
+            </svg>
+         </span>
+      </button>
+
+   </div>
+</body>
+
+
+
+</html>
